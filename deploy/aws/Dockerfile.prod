@@ -1,0 +1,25 @@
+# Production image. Multi-stage so the runtime layer has no build toolchain.
+
+FROM python:3.12-slim AS builder
+WORKDIR /build
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
+COPY pyproject.toml .
+COPY argus/ argus/
+COPY products/ products/
+RUN pip install --no-cache-dir --prefix=/install ".[ai,mcp,otel,metrics]"
+
+FROM python:3.12-slim AS runtime
+WORKDIR /app
+# Non-root user, no shell login
+RUN useradd -r -s /usr/sbin/nologin argus
+COPY --from=builder /install /usr/local
+COPY argus/ argus/
+COPY products/ products/
+COPY config/ config/
+USER argus
+EXPOSE 9090
+# JSON logs by default so CloudWatch / Loki ingest cleanly
+ENV SENTINEL_LOG_JSON=1
+CMD ["python", "-m", "argus"]
