@@ -53,15 +53,11 @@ def build_async_client(
     headers: dict[str, str] = {}
 
     resolved_key = api_key or os.getenv("ANTHROPIC_API_KEY") or os.getenv("ARGUS_ANTHROPIC_API_KEY")
-    if resolved_key and resolved_key.startswith(_OAUTH_KEY_PREFIX):
+    oauth_path = bool(resolved_key and resolved_key.startswith(_OAUTH_KEY_PREFIX))
+    if oauth_path:
         # OAuth-style user token: Bearer auth + OAuth beta flag.
-        # Also unset ANTHROPIC_API_KEY in this process so the SDK's own env
-        # fallback doesn't ALSO attach an x-api-key header — the server
-        # validates x-api-key first and rejects the usr key there with a 401.
         kwargs["auth_token"] = resolved_key
         headers["anthropic-beta"] = _OAUTH_BETA_HEADER
-        os.environ.pop("ANTHROPIC_API_KEY", None)
-        os.environ.pop("ANTHROPIC_AUTH_TOKEN", None)
         logger.debug("anthropic client using OAuth-style user key")
     elif resolved_key:
         kwargs["api_key"] = resolved_key
@@ -80,4 +76,19 @@ def build_async_client(
     if base_url:
         kwargs["base_url"] = base_url
 
+    if oauth_path:
+        # The SDK reads ANTHROPIC_API_KEY from env at __init__ and would then
+        # attach BOTH x-api-key AND Authorization headers; the server validates
+        # x-api-key first and rejects the usr key there with a 401. Suppress
+        # the env fallback transiently and restore it so the next build (e.g.
+        # the eval judge) still finds the key.
+        saved_api = os.environ.pop("ANTHROPIC_API_KEY", None)
+        saved_auth = os.environ.pop("ANTHROPIC_AUTH_TOKEN", None)
+        try:
+            return AsyncAnthropic(**kwargs)
+        finally:
+            if saved_api is not None:
+                os.environ["ANTHROPIC_API_KEY"] = saved_api
+            if saved_auth is not None:
+                os.environ["ANTHROPIC_AUTH_TOKEN"] = saved_auth
     return AsyncAnthropic(**kwargs)
