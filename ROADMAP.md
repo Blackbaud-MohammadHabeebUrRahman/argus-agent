@@ -23,9 +23,24 @@ artifact.
 
 ## Sequencing
 
-Phases: 0 → 0.5 → 1 → 2 → 4 → 3 → 5 → 6 → 7 → 8. Evals (4) go before MCP (3):
+Phases: 0 → 0.5 → 1 → 2 → 4 → 3 → 5 → 7 → 6 → 8. Evals (4) go before MCP (3):
 once the agent exists, locking its behaviour down with evals matters more than
 exposing it over a protocol you can bolt on later.
+
+## Status
+
+| Phase | What | Status |
+|---|---|---|
+| 0 | Foundation (CI, logging, OTel, pins) | ✅ shipped |
+| 0.5 | Plugin architecture (Hub + entry points + products/) | ✅ shipped |
+| 1 | Monitoring loop (http/tcp/redis/prom, Prometheus /metrics, dedup escalation, incident doc) | ✅ shipped |
+| 2 | Investigation agent (Messages API tool-use loop, trajectory, OTel, CLI, 4 core + 2 Saboten tools) | ✅ shipped |
+| 4 | Eval harness (scenarios, mock hub, deterministic + judge grader, HTML report) | ✅ shipped |
+| 3 | MCP server (official SDK, resources + tools + prompts) | ✅ shipped |
+| 5 | HITL remediation (Action registry, approval store, policy, audit, 3 Saboten actions) | ✅ shipped |
+| 7 | Security pass (SECURITY.md, sanitize, PII strip, tool allowlist) | ✅ shipped |
+| 6 | AWS deployment (Terraform, prod Dockerfile, OIDC CI) | ✅ shipped |
+| 8 | Packaging (README, architecture doc, resume pitch) | ✅ shipped |
 
 ---
 
