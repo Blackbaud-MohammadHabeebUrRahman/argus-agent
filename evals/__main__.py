@@ -19,12 +19,15 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from argus.dotenv import load_dotenv_if_present
 from argus.logging import configure_logging
 
 from .harness.grader import DEFAULT_JUDGE_MODEL
 from .harness.report import render_markdown_summary, write_report
 from .harness.runner import run_sweep
 from .harness.scenario import load_scenarios
+
+load_dotenv_if_present()
 
 DEFAULT_FIXTURES = Path(__file__).parent / "fixtures"
 DEFAULT_OUT = Path(__file__).parent / "results"

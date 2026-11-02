@@ -20,11 +20,14 @@ import logging
 import sys
 from pathlib import Path
 
+from argus.dotenv import load_dotenv_if_present
 from argus.logging import configure_logging
 from argus.models import Incident
 from argus.plugins import build_hub
 
 from .agent import DEFAULT_MAX_STEPS, DEFAULT_MODEL, InvestigationAgent
+
+load_dotenv_if_present()
 
 logger = logging.getLogger("argus.investigate.cli")
 
