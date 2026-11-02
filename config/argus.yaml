@@ -1,77 +1,30 @@
+# Argus — primary configuration.
+#
+# Minimal template. Point at a plugin's reference config for a real
+# starting point (e.g. products/saboten/config/saboten.example.yaml).
+#
+#   product: saboten          # loads only the Saboten plugin
+#   products: [saboten, aws]  # loads several
+#   (omit both to load every discovered plugin)
+
 environments:
   dev:
-    services:
-      saboten-api:
-        host: "localhost"
-        checks:
-          - type: http
-            path: "/api/1.0/soap?wsdl"
-            port: 5000
-            interval: 60
-            timeout: 10
-          - type: http
-            path: "/version"
-            port: 5000
-            interval: 300
-          - type: job_health
-            path: "/monitor"
-            port: 5000
-            interval: 300
-            thresholds:
-              stuck_jobs_warning: 5
-              stuck_jobs_critical: 15
-              failed_rate_warning: 0.10
-              failed_rate_critical: 0.25
-
-      ikari-worker:
-        host: "localhost"
-        checks:
-          - type: http
-            path: "/api/1.0/soap?wsdl"
-            port: 5003
-            interval: 60
-
-      tomi-worker:
-        host: "localhost"
-        checks:
-          - type: http
-            path: "/api/1.0/soap?wsdl"
-            port: 5004
-            interval: 60
-
-      racha-worker:
-        host: "localhost"
-        checks:
-          - type: http
-            path: "/api/1.0/soap?wsdl"
-            port: 5005
-            interval: 60
-
-      mock-worker:
-        host: "localhost"
-        checks:
-          - type: http
-            path: "/api/1.0/soap?wsdl"
-            port: 5002
-            interval: 60
-
-      redis:
-        host: "localhost"
-        checks:
-          - type: redis
-            port: 6379
-            interval: 60
-            thresholds:
-              queue_depth_warning: 100
-              queue_depth_critical: 500
-              memory_pct_warning: 80
+    services: {}
+      # Example of a core check that needs no plugin:
+      # example-api:
+      #   host: "localhost"
+      #   checks:
+      #     - type: http
+      #       path: "/health"
+      #       port: 8080
+      #       interval: 60
 
 alerting:
   teams:
     enabled: false
   slack:
     enabled: false
-    channel: "#saboten-alerts"
+    channel: "#argus-alerts"
   email:
     enabled: false
 
@@ -80,8 +33,6 @@ alerting:
       channels: [teams, slack]
     - severity: warning
       channels: [teams]
-    - severity: info
-      channels: [slack]
 
   dedup:
     cooldown_minutes: 30

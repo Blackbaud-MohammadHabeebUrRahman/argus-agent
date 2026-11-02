@@ -36,7 +36,11 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["argus*"]
+include = ["argus*", "products*"]
+
+[project.entry-points."argus.plugins"]
+saboten = "products.saboten:register"
+example = "products.example:register"
 
 [tool.ruff]
 line-length = 100

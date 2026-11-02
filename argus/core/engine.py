@@ -6,56 +6,25 @@ from argus.alert.dedup import AlertDedup
 from argus.alert.router import AlertRouter
 from argus.config import ArgusConfig
 from argus.models import CheckResult, CheckStatus
-from argus.monitor.http_check import HttpCheck
-from argus.monitor.job_check import JobCheck
-from argus.monitor.redis_check import RedisCheck
+from argus.plugins import Hub, build_hub
 
 from .scheduler import CheckScheduler
 from .state import IncidentStore
 
 logger = logging.getLogger(__name__)
 
-CHECK_FACTORIES = {
-    "http": lambda name, svc_name, svc_cfg, chk_cfg, env: HttpCheck(
-        name=name,
-        service=svc_name,
-        host=svc_cfg.host,
-        port=chk_cfg.port,
-        path=chk_cfg.path,
-        interval=chk_cfg.interval,
-        timeout=chk_cfg.timeout,
-        environment=env,
-        thresholds=chk_cfg.thresholds,
-    ),
-    "job_health": lambda name, svc_name, svc_cfg, chk_cfg, env: JobCheck(
-        name=name,
-        service=svc_name,
-        host=svc_cfg.host,
-        port=chk_cfg.port,
-        path=chk_cfg.path or "/monitor",
-        interval=chk_cfg.interval,
-        timeout=chk_cfg.timeout,
-        environment=env,
-        thresholds=chk_cfg.thresholds,
-    ),
-    "redis": lambda name, svc_name, svc_cfg, chk_cfg, env: RedisCheck(
-        name=name,
-        service=svc_name,
-        host=svc_cfg.host,
-        port=chk_cfg.port,
-        interval=chk_cfg.interval,
-        timeout=chk_cfg.timeout,
-        environment=env,
-        thresholds=chk_cfg.thresholds,
-    ),
-}
-
 
 class ArgusEngine:
-    """Central orchestrator: detect -> evaluate state -> route alert."""
+    """Central orchestrator: detect -> evaluate state -> route alert.
 
-    def __init__(self, config: ArgusConfig):
+    Check types are resolved through a ``Hub``; core checks (http, redis)
+    are always available, and product plugins contribute additional ones
+    like ``saboten.job_health``.
+    """
+
+    def __init__(self, config: ArgusConfig, hub: Hub | None = None):
         self._config = config
+        self._hub = hub or build_hub(enabled_products=config.enabled_products)
         self._incident_store = IncidentStore(config.settings.redis_url)
         self._dedup = AlertDedup(
             config.settings.redis_url,
@@ -80,12 +49,13 @@ class ArgusEngine:
                         idx = same_type.index(chk_cfg)
                         check_name = f"{svc_name}-{chk_cfg.type}-{idx}"
 
-                factory = CHECK_FACTORIES.get(chk_cfg.type)
+                factory = self._hub.get_check_factory(chk_cfg.type)
                 if factory is None:
                     logger.warning(
-                        "Unknown check type '%s' for %s — skipping",
+                        "Unknown check type %r for %s — skipping (available: %s)",
                         chk_cfg.type,
                         svc_name,
+                        self._hub.check_types(),
                     )
                     continue
 

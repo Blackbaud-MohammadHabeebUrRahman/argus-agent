@@ -1,0 +1,94 @@
+# Saboten plugin reference configuration.
+#
+# Copy to config/argus.yaml (or merge into an existing one) and point at
+# your Saboten deployment. Enables the plugin via `product: saboten`.
+
+product: saboten
+
+environments:
+  dev:
+    services:
+      saboten-api:
+        host: "localhost"
+        checks:
+          - type: http
+            path: "/api/1.0/soap?wsdl"
+            port: 5000
+            interval: 60
+            timeout: 10
+          - type: http
+            path: "/version"
+            port: 5000
+            interval: 300
+          - type: saboten.job_health
+            path: "/monitor"
+            port: 5000
+            interval: 300
+            thresholds:
+              stuck_jobs_warning: 5
+              stuck_jobs_critical: 15
+              failed_rate_warning: 0.10
+              failed_rate_critical: 0.25
+
+      ikari-worker:
+        host: "localhost"
+        checks:
+          - type: http
+            path: "/api/1.0/soap?wsdl"
+            port: 5003
+            interval: 60
+
+      tomi-worker:
+        host: "localhost"
+        checks:
+          - type: http
+            path: "/api/1.0/soap?wsdl"
+            port: 5004
+            interval: 60
+
+      racha-worker:
+        host: "localhost"
+        checks:
+          - type: http
+            path: "/api/1.0/soap?wsdl"
+            port: 5005
+            interval: 60
+
+      mock-worker:
+        host: "localhost"
+        checks:
+          - type: http
+            path: "/api/1.0/soap?wsdl"
+            port: 5002
+            interval: 60
+
+      redis:
+        host: "localhost"
+        checks:
+          - type: redis
+            port: 6379
+            interval: 60
+            thresholds:
+              queue_depth_warning: 100
+              queue_depth_critical: 500
+              memory_pct_warning: 80
+
+alerting:
+  teams:
+    enabled: false
+  slack:
+    enabled: false
+    channel: "#saboten-alerts"
+  email:
+    enabled: false
+
+  routing:
+    - severity: critical
+      channels: [teams, slack]
+    - severity: warning
+      channels: [teams]
+    - severity: info
+      channels: [slack]
+
+  dedup:
+    cooldown_minutes: 30

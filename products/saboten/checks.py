@@ -1,22 +1,31 @@
+"""Saboten-specific health checks.
+
+Only one for now: ``saboten.job_health`` polls Saboten's ``/monitor``
+endpoint for in-progress and failed-in-24h job counts by vendor type.
+"""
+
 from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from argus.models import CheckStatus
+from argus.models import CheckResult, CheckStatus
+from argus.monitor.base import HealthCheck
 
-from .base import CheckResult, HealthCheck
+if TYPE_CHECKING:
+    from argus.config import CheckConfig, ServiceConfig
+    from argus.plugins import Hub
 
 logger = logging.getLogger(__name__)
 
 JOB_TYPES = ["NCOA", "DHC", "Deceased", "Fundraising", "Social"]
 
 
-class JobCheck(HealthCheck):
-    """Check Saboten job queue health via the /monitor endpoint."""
+class SabotenJobHealthCheck(HealthCheck):
+    """Check Saboten job queue health via its ``/monitor`` endpoint."""
 
     def __init__(
         self,
@@ -26,7 +35,7 @@ class JobCheck(HealthCheck):
         port: int = 5000,
         path: str = "/monitor",
         scheme: str = "http",
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(name=name, service=service, **kwargs)
         self.base_url = f"{scheme}://{host}:{port}{path}"
@@ -77,13 +86,15 @@ class JobCheck(HealthCheck):
                             if count >= self.stuck_critical:
                                 worst_status = CheckStatus.CRITICAL
                                 issues.append(
-                                    f"{job_type}: {count} failed jobs in 24h (critical threshold: {self.stuck_critical})"
+                                    f"{job_type}: {count} failed jobs in 24h "
+                                    f"(critical threshold: {self.stuck_critical})"
                                 )
                             elif count >= self.stuck_warning:
                                 if worst_status != CheckStatus.CRITICAL:
                                     worst_status = CheckStatus.WARNING
                                 issues.append(
-                                    f"{job_type}: {count} failed jobs in 24h (warning threshold: {self.stuck_warning})"
+                                    f"{job_type}: {count} failed jobs in 24h "
+                                    f"(warning threshold: {self.stuck_warning})"
                                 )
                     except Exception:
                         details[f"{job_type}_failed_24h"] = "error"
@@ -105,10 +116,34 @@ class JobCheck(HealthCheck):
                 duration_ms=duration_ms,
                 details=details,
             )
-        else:
-            return self._result(
-                worst_status,
-                "; ".join(issues),
-                duration_ms=duration_ms,
-                details=details,
-            )
+        return self._result(
+            worst_status,
+            "; ".join(issues),
+            duration_ms=duration_ms,
+            details=details,
+        )
+
+
+def register_checks(hub: Hub) -> None:
+    """Register check types the Saboten orchestrator exposes."""
+
+    def factory(
+        name: str,
+        svc_name: str,
+        svc_cfg: ServiceConfig,
+        chk_cfg: CheckConfig,
+        env: str,
+    ) -> HealthCheck:
+        return SabotenJobHealthCheck(
+            name=name,
+            service=svc_name,
+            host=svc_cfg.host,
+            port=chk_cfg.port,
+            path=chk_cfg.path or "/monitor",
+            interval=chk_cfg.interval,
+            timeout=chk_cfg.timeout,
+            environment=env,
+            thresholds=chk_cfg.thresholds,
+        )
+
+    hub.register_check("saboten.job_health", factory)

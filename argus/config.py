@@ -32,7 +32,7 @@ class TeamsConfig(ChannelConfig):
 
 class SlackConfig(ChannelConfig):
     webhook_url: str = ""
-    channel: str = "#saboten-alerts"
+    channel: str = "#argus-alerts"
 
 
 class EmailConfig(ChannelConfig):
@@ -40,7 +40,7 @@ class EmailConfig(ChannelConfig):
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
-    from_address: str = "saboten-argus@blackbaud.com"
+    from_address: str = "argus@example.com"
     recipients: list[str] = Field(default_factory=list)
 
 
@@ -77,7 +77,7 @@ class ArgusSettings(BaseSettings):
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
-    email_from: str = "saboten-argus@blackbaud.com"
+    email_from: str = "argus@example.com"
     splunk_base_url: str = ""
     splunk_token: str = ""
     github_token: str = ""
@@ -91,10 +91,29 @@ class ArgusConfig(BaseModel):
     settings: ArgusSettings
     environments: dict[str, EnvironmentConfig] = Field(default_factory=dict)
     alerting: AlertingConfig = Field(default_factory=AlertingConfig)
+    product: str | None = None
+    products: list[str] | None = None
 
     @property
     def active_env(self) -> EnvironmentConfig:
         return self.environments.get(self.settings.environment, EnvironmentConfig())
+
+    @property
+    def enabled_products(self) -> list[str] | None:
+        """Which plugin entry points to activate.
+
+        ``None`` means "load every discovered plugin"; a list means "load
+        only these". ``product:`` (singular) and ``products:`` (list) in
+        YAML combine into one list.
+        """
+        if self.product is None and self.products is None:
+            return None
+        names: list[str] = []
+        if self.product:
+            names.append(self.product)
+        if self.products:
+            names.extend(self.products)
+        return names
 
 
 def _deep_merge(base: dict, overlay: dict) -> dict:
@@ -158,4 +177,6 @@ def load_config(config_path: str | None = None, env: str | None = None) -> Argus
         settings=settings,
         environments=environments,
         alerting=alerting,
+        product=yaml_data.get("product"),
+        products=yaml_data.get("products"),
     )
