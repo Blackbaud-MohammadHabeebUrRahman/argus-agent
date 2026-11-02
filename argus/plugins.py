@@ -19,9 +19,12 @@ factories, tools, or remediation actions.
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING, Any
+
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from argus.config import CheckConfig, ServiceConfig
@@ -33,12 +36,42 @@ CheckFactory = Callable[[str, str, "ServiceConfig", "CheckConfig", str], "Health
 """Signature: (check_name, service_name, service_cfg, check_cfg, environment)."""
 
 
+@dataclass(frozen=True)
+class Tool:
+    """An investigation tool the agent can call.
+
+    ``name`` becomes the tool name Claude sees. ``description`` is the
+    docstring the model reads to decide when to call it — write it like
+    a prompt, not a code comment. ``args_model`` is a pydantic model
+    whose JSON schema becomes the tool's ``input_schema``. ``impl`` is
+    an async callable that receives a validated ``args_model`` instance.
+    """
+
+    name: str
+    description: str
+    args_model: type[BaseModel]
+    impl: Callable[[Any], Awaitable[Any]]
+
+    def to_claude_tool(self) -> dict[str, Any]:
+        """Format for the Anthropic Messages API ``tools`` parameter."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "input_schema": self.args_model.model_json_schema(),
+        }
+
+    async def call(self, raw_input: dict[str, Any]) -> Any:
+        """Validate args against the pydantic model, then invoke the impl."""
+        args = self.args_model(**raw_input)
+        return await self.impl(args)
+
+
 class Hub:
     """Central registry that plugins populate at startup."""
 
     def __init__(self) -> None:
         self._checks: dict[str, CheckFactory] = {}
-        self._tools: dict[str, Callable[..., Any]] = {}
+        self._tools: dict[str, Tool] = {}
         self._actions: dict[str, Callable[..., Any]] = {}
 
     def register_check(self, type_name: str, factory: CheckFactory) -> None:
@@ -47,12 +80,12 @@ class Hub:
         self._checks[type_name] = factory
         logger.debug("registered check type %r", type_name)
 
-    def register_tool(self, name: str, func: Callable[..., Any]) -> None:
-        """Reserved for Phase 2 (investigation tools)."""
-        if name in self._tools:
-            raise ValueError(f"Tool {name!r} is already registered")
-        self._tools[name] = func
-        logger.debug("registered tool %r", name)
+    def register_tool(self, tool: Tool) -> None:
+        """Install an investigation tool the agent can call."""
+        if tool.name in self._tools:
+            raise ValueError(f"Tool {tool.name!r} is already registered")
+        self._tools[tool.name] = tool
+        logger.debug("registered tool %r", tool.name)
 
     def register_action(self, name: str, func: Callable[..., Any]) -> None:
         """Reserved for Phase 5 (remediation actions)."""
@@ -67,7 +100,7 @@ class Hub:
     def check_types(self) -> list[str]:
         return sorted(self._checks)
 
-    def tools(self) -> dict[str, Callable[..., Any]]:
+    def tools(self) -> dict[str, Tool]:
         return dict(self._tools)
 
     def actions(self) -> dict[str, Callable[..., Any]]:
@@ -161,6 +194,14 @@ def _register_core_checks(hub: Hub) -> None:
     hub.register_check("prometheus_scrape", prometheus_scrape_factory)
 
 
+def _register_core_tools(hub: Hub) -> None:
+    """Investigation tools that ship with every install (lazy import to avoid
+    pulling anthropic into the engine startup path)."""
+    from argus.investigate.core_tools import register_core_tools
+
+    register_core_tools(hub)
+
+
 def build_hub(enabled_products: list[str] | None = None) -> Hub:
     """Create a hub, install core checks, then run every discovered plugin.
 
@@ -170,6 +211,7 @@ def build_hub(enabled_products: list[str] | None = None) -> Hub:
     """
     hub = Hub()
     _register_core_checks(hub)
+    _register_core_tools(hub)
 
     for ep in entry_points(group="argus.plugins"):
         if enabled_products is not None and ep.name not in enabled_products:

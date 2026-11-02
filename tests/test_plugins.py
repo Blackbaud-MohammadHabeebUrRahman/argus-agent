@@ -50,19 +50,29 @@ class TestHub:
         assert hub.get_check_factory("nope") is None
 
     def test_tool_and_action_registration(self):
-        hub = Hub()
+        from pydantic import BaseModel
 
-        def my_tool(**_: Any) -> dict[str, str]:
+        from argus.plugins import Tool
+
+        class _Args(BaseModel):
+            x: int = 1
+
+        async def _impl(_args: _Args) -> dict[str, str]:
             return {"ok": "yes"}
 
-        hub.register_tool("search_things", my_tool)
-        assert hub.tools()["search_things"] is my_tool
+        tool = Tool(name="search_things", description="d", args_model=_Args, impl=_impl)
+        hub = Hub()
+        hub.register_tool(tool)
+        assert hub.tools()["search_things"] is tool
 
         with pytest.raises(ValueError, match="already registered"):
-            hub.register_tool("search_things", my_tool)
+            hub.register_tool(tool)
 
-        hub.register_action("restart_thing", my_tool)
-        assert hub.actions()["restart_thing"] is my_tool
+        def my_action(**_: Any) -> dict[str, str]:
+            return {"ok": "yes"}
+
+        hub.register_action("restart_thing", my_action)
+        assert hub.actions()["restart_thing"] is my_action
 
 
 class TestBuildHub:
