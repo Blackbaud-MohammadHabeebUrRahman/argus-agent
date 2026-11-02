@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 
 from argus.config import CheckConfig, ServiceConfig
@@ -53,6 +51,7 @@ class TestHub:
         from pydantic import BaseModel
 
         from argus.plugins import Tool
+        from argus.remediate.action import Action
 
         class _Args(BaseModel):
             x: int = 1
@@ -68,11 +67,15 @@ class TestHub:
         with pytest.raises(ValueError, match="already registered"):
             hub.register_tool(tool)
 
-        def my_action(**_: Any) -> dict[str, str]:
-            return {"ok": "yes"}
-
-        hub.register_action("restart_thing", my_action)
-        assert hub.actions()["restart_thing"] is my_action
+        action = Action(
+            name="restart_thing",
+            description="d",
+            args_model=_Args,
+            impl=_impl,
+            destructive=True,
+        )
+        hub.register_action(action)
+        assert hub.actions()["restart_thing"] is action
 
 
 class TestBuildHub:

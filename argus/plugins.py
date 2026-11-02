@@ -87,11 +87,19 @@ class Hub:
         self._tools[tool.name] = tool
         logger.debug("registered tool %r", tool.name)
 
-    def register_action(self, name: str, func: Callable[..., Any]) -> None:
-        """Reserved for Phase 5 (remediation actions)."""
+    def register_action(self, action: Any) -> None:
+        """Install a remediation action.
+
+        Accepts either an ``argus.remediate.action.Action`` (preferred)
+        or any object with a ``.name`` attribute, so plugin authors can
+        pass their own action type if they want.
+        """
+        name = getattr(action, "name", None)
+        if not isinstance(name, str) or not name:
+            raise ValueError("action must have a non-empty .name attribute")
         if name in self._actions:
             raise ValueError(f"Action {name!r} is already registered")
-        self._actions[name] = func
+        self._actions[name] = action
         logger.debug("registered action %r", name)
 
     def get_check_factory(self, type_name: str) -> CheckFactory | None:
