@@ -5,8 +5,8 @@ from collections.abc import Awaitable, Callable
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from sentinel.models import CheckResult
-from sentinel.monitor.base import HealthCheck
+from argus.models import CheckResult
+from argus.monitor.base import HealthCheck
 
 logger = logging.getLogger(__name__)
 

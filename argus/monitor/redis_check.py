@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Any
 
-from sentinel.models import CheckStatus
+from argus.models import CheckStatus
 
 from .base import CheckResult, HealthCheck
 

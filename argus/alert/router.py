@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 
-from sentinel.config import AlertingConfig
-from sentinel.models import Incident
+from argus.config import AlertingConfig
+from argus.models import Incident
 
 from .base import AlertChannel
 from .slack import SlackChannel

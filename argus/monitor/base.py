@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
-from sentinel.models import SEVERITY_FROM_STATUS, CheckResult, CheckStatus
+from argus.models import SEVERITY_FROM_STATUS, CheckResult, CheckStatus
 
 logger = logging.getLogger(__name__)
 

@@ -6,11 +6,11 @@ from datetime import datetime, timezone
 
 import redis.asyncio as aioredis
 
-from sentinel.models import CheckResult, Incident
+from argus.models import CheckResult, Incident
 
 logger = logging.getLogger(__name__)
 
-KEY_PREFIX = "sentinel:incident:"
+KEY_PREFIX = "argus:incident:"
 
 
 class IncidentStore:

@@ -40,7 +40,7 @@ class EmailConfig(ChannelConfig):
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
-    from_address: str = "saboten-sentinel@blackbaud.com"
+    from_address: str = "saboten-argus@blackbaud.com"
     recipients: list[str] = Field(default_factory=list)
 
 
@@ -66,9 +66,9 @@ class EnvironmentConfig(BaseModel):
     services: dict[str, ServiceConfig] = Field(default_factory=dict)
 
 
-class SentinelSettings(BaseSettings):
+class ArgusSettings(BaseSettings):
     environment: str = "dev"
-    config_path: str = "config/sentinel.yaml"
+    config_path: str = "config/argus.yaml"
     log_level: str = "INFO"
     redis_url: str = "redis://localhost:6379/1"
     teams_webhook_url: str = ""
@@ -77,18 +77,18 @@ class SentinelSettings(BaseSettings):
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
-    email_from: str = "saboten-sentinel@blackbaud.com"
+    email_from: str = "saboten-argus@blackbaud.com"
     splunk_base_url: str = ""
     splunk_token: str = ""
     github_token: str = ""
     github_org: str = "blackbaud"
     anthropic_api_key: str = ""
 
-    model_config = {"env_prefix": "SENTINEL_"}
+    model_config = {"env_prefix": "ARGUS_"}
 
 
-class SentinelConfig(BaseModel):
-    settings: SentinelSettings
+class ArgusConfig(BaseModel):
+    settings: ArgusSettings
     environments: dict[str, EnvironmentConfig] = Field(default_factory=dict)
     alerting: AlertingConfig = Field(default_factory=AlertingConfig)
 
@@ -107,8 +107,8 @@ def _deep_merge(base: dict, overlay: dict) -> dict:
     return merged
 
 
-def load_config(config_path: str | None = None, env: str | None = None) -> SentinelConfig:
-    settings = SentinelSettings()
+def load_config(config_path: str | None = None, env: str | None = None) -> ArgusConfig:
+    settings = ArgusSettings()
     path = Path(config_path or settings.config_path)
 
     yaml_data: dict[str, Any] = {}
@@ -117,7 +117,7 @@ def load_config(config_path: str | None = None, env: str | None = None) -> Senti
             yaml_data = yaml.safe_load(f) or {}
 
     env_name = env or settings.environment
-    env_overlay_path = path.parent / f"sentinel.{env_name}.yaml"
+    env_overlay_path = path.parent / f"argus.{env_name}.yaml"
     if env_overlay_path.exists():
         with open(env_overlay_path) as f:
             overlay = yaml.safe_load(f) or {}
@@ -154,7 +154,7 @@ def load_config(config_path: str | None = None, env: str | None = None) -> Senti
 
     alerting = AlertingConfig(**alerting_data)
 
-    return SentinelConfig(
+    return ArgusConfig(
         settings=settings,
         environments=environments,
         alerting=alerting,

@@ -19,19 +19,19 @@ test-all: dev  ## Run every test marker
 	$(PY) -m pytest
 
 lint: dev  ## Ruff lint
-	$(PY) -m ruff check sentinel tests
+	$(PY) -m ruff check argus tests
 
 fmt: dev  ## Ruff format
-	$(PY) -m ruff format sentinel tests
-	$(PY) -m ruff check --fix sentinel tests
+	$(PY) -m ruff format argus tests
+	$(PY) -m ruff check --fix argus tests
 
 typecheck: dev  ## Mypy
-	$(PY) -m mypy sentinel
+	$(PY) -m mypy argus
 
 check: lint typecheck test  ## What CI runs
 
-run-local: dev  ## Run the sentinel locally against config/sentinel.yaml
-	$(PY) -m sentinel
+run-local: dev  ## Run the argus locally against config/argus.yaml
+	$(PY) -m argus
 
 docker-up:
 	docker compose up --build

@@ -4,7 +4,7 @@ import logging
 
 import httpx
 
-from sentinel.models import Incident, Severity
+from argus.models import Incident, Severity
 
 from .base import AlertChannel
 
@@ -43,7 +43,7 @@ class SlackChannel(AlertChannel):
                 "type": "header",
                 "text": {
                     "type": "plain_text",
-                    "text": f"{emoji} Saboten Sentinel Alert",
+                    "text": f"{emoji} Argus Alert",
                     "emoji": True,
                 },
             },

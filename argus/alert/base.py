@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 
-from sentinel.models import Incident
+from argus.models import Incident
 
 logger = logging.getLogger(__name__)
 

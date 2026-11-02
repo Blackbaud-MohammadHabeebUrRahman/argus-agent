@@ -48,8 +48,8 @@ class SplunkClient:
         if not self._configured:
             logger.warning(
                 "SplunkClient not configured (no base_url/token) — "
-                "operating in stub mode. Set SENTINEL_SPLUNK_BASE_URL "
-                "and SENTINEL_SPLUNK_TOKEN to enable."
+                "operating in stub mode. Set ARGUS_SPLUNK_BASE_URL "
+                "and ARGUS_SPLUNK_TOKEN to enable."
             )
 
     async def search(

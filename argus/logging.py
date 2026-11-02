@@ -1,4 +1,4 @@
-"""Structured JSON logging for Sentinel.
+"""Structured JSON logging for Argus.
 
 Keeps the stdlib ``logging`` API — modules still call ``logger.info(...)`` —
 but emits one JSON object per line so logs can be ingested cleanly by

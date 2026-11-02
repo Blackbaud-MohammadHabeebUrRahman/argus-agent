@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
-from sentinel.logging import configure_logging
+from argus.logging import configure_logging
 
 
 def test_json_formatter_round_trips(capsys):

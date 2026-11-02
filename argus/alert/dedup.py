@@ -6,7 +6,7 @@ import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 
-KEY_PREFIX = "sentinel:dedup:"
+KEY_PREFIX = "argus:dedup:"
 
 
 class AlertDedup:

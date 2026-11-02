@@ -1,7 +1,7 @@
 """OpenTelemetry bootstrap.
 
 Called once at startup. If the ``otel`` extra isn't installed, this is a
-no-op so the sentinel still runs in minimal environments. When installed
+no-op so the argus still runs in minimal environments. When installed
 and ``OTEL_EXPORTER_OTLP_ENDPOINT`` is set, traces ship over OTLP; otherwise
 they print to stdout, which is useful during local development.
 """
@@ -11,12 +11,12 @@ from __future__ import annotations
 import logging
 import os
 
-logger = logging.getLogger("sentinel.telemetry")
+logger = logging.getLogger("argus.telemetry")
 
 _initialized = False
 
 
-def configure_tracing(service_name: str = "saboten-sentinel") -> None:
+def configure_tracing(service_name: str = "saboten-argus") -> None:
     """Install a tracer provider. Idempotent."""
     global _initialized
     if _initialized:

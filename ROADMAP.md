@@ -1,9 +1,15 @@
-# Saboten Sentinel — Roadmap
+# Argus — Roadmap
 
-AI-powered monitoring, investigation, and remediation agent for the Saboten
-platform. The project doubles as a career-growth vehicle: shipping it covers
-agentic AI engineering, cloud, system design, security, and business framing in
-one artifact.
+Argus is a product-agnostic AI monitoring, investigation, and remediation
+agent. The core framework ships with generic health checks, alert channels,
+an agent harness, an MCP server, and an eval harness; per-product behaviour
+(custom checks, investigation tools, remediations) is contributed through
+plugins. Saboten ships as the first reference plugin and the project's own
+dogfood target.
+
+The project doubles as a career-growth vehicle: shipping it covers agentic AI
+engineering, cloud, system design, security, and business framing in one
+artifact.
 
 ## How this project maps to the growth priorities
 
@@ -17,10 +23,9 @@ one artifact.
 
 ## Sequencing
 
-Phases run in this order: 0 → 1 → 2 → 4 → 3 → 5 → 6 → 7 → 8.
-Evals (4) go before MCP (3): once the agent exists, locking its behaviour down
-with evals is more valuable than exposing it over a protocol you can bolt on
-later.
+Phases: 0 → 0.5 → 1 → 2 → 4 → 3 → 5 → 6 → 7 → 8. Evals (4) go before MCP (3):
+once the agent exists, locking its behaviour down with evals matters more than
+exposing it over a protocol you can bolt on later.
 
 ---
 
@@ -34,10 +39,29 @@ later.
 
 **Deliverable:** green CI badge, one-command local run.
 
+## Phase 0.5 — Plugin architecture (product-agnostic core)
+
+Lift the Saboten-shaped assumptions out of the core so Argus is reusable.
+
+- `argus/plugins.py`: `Hub` with `register_check`, `register_tool`,
+  `register_remediation`, `register_config_schema`
+- Refactor `argus/core/engine.py` to resolve check types from the registry
+  instead of a hardcoded `CHECK_FACTORIES` dict
+- `products/saboten/` as the first plugin:
+  - `checks.py` — `SabotenJobHealth` check (the current `/monitor` endpoint)
+  - `tools.py` — `get_saboten_job_state`, `requeue_saboten_job` (stubs for now)
+  - `config/saboten.yaml` — moves out of `config/argus.yaml`
+  - `__init__.py` — `register(hub)` entry point
+- Entry points in `pyproject.toml` so `pip install argus-plugin-foo` auto-registers
+- `docs/writing-a-plugin.md` walks through a minimal second plugin
+- Config: top-level `product:` key selects which plugin ships product-specific bits
+
+**Deliverable:** a second product plugin (even a toy one, e.g. a Postgres box) proves the core is decoupled.
+
 ## Phase 1 — Make the monitoring loop solid
 
-- Finish the three monitors; add a Prometheus `/metrics` endpoint
-- Testcontainers-based integration tests: real Redis, fake Saboten SOAP endpoint
+- Finish the built-in generic monitors (http, redis, tcp, prometheus_scrape); add a Prometheus `/metrics` endpoint
+- Testcontainers integration tests: real Redis, a fake HTTP target, and the Saboten plugin pointed at a mock SOAP endpoint
 - Document the incident state machine (open → acknowledged → investigating → resolved) in `docs/incidents.md`
 - Dedup edge-case tests (TTL expiry, severity escalation re-opens, flapping)
 
@@ -47,13 +71,14 @@ later.
 
 The core AI story. Do not skip to shiny things before this works.
 
-- `investigate/agent.py` built on the Claude Agent SDK (not raw `anthropic.messages.create`)
-- Tools defined as pydantic schemas, implementations behind adapters so they can be mocked:
+- `argus/investigate/agent.py` built on the Claude Agent SDK (not raw `anthropic.messages.create`)
+- Core tools (every plugin inherits):
   - `query_splunk(query, time_range)`
-  - `get_job_history(external_job_id)`
-  - `check_vendor_api_health(vendor)`
   - `get_recent_deploys(service, hours)`
   - `search_github_prs(service, since)`
+  - `get_cloudwatch_logs(group, filter, since)`
+- Plugin-contributed tools: Saboten plugin registers `get_saboten_job_history`, `check_saboten_vendor_api_health`
+- Tools defined as pydantic schemas with adapters behind them (mockable in tests)
 - Context management: compress tool outputs above N tokens with a summarizer sub-call; cap trajectory length
 - Trace every tool call and model call with OTel spans; log input/output tokens per investigation
 - Replay: given an incident JSON, re-run offline — foundation for Phase 4
@@ -68,7 +93,7 @@ The core AI story. Do not skip to shiny things before this works.
 - Prompts: templates for "stuck jobs", "worker crash loop", "vendor latency spike"
 - Document how to add it to Claude Code and Claude Desktop
 
-**Deliverable:** drive the sentinel from Claude Code via MCP.
+**Deliverable:** drive the argus from Claude Code via MCP.
 
 ## Phase 4 — Evals
 
@@ -85,7 +110,8 @@ The scarce skill. This is the interview story.
 
 ## Phase 5 — Remediation with human-in-the-loop
 
-- `remediate/actions.py` with a whitelisted action set: `restart_worker`, `requeue_job`, `flush_cache_key`
+- Core action registry in `argus/remediate/`; plugins register whitelisted actions
+- Saboten plugin ships: `restart_saboten_worker`, `requeue_saboten_job`, `flush_cache_key`
 - Approval flow: agent proposes → Teams card with Approve/Reject → audit log → execute
 - Per-environment scoping: dev auto-approves, stg/prd require human
 - Every action emits an OTel span and a structured audit record
@@ -110,10 +136,12 @@ The scarce skill. This is the interview story.
 
 ## Phase 8 — Package it
 
-- README with: problem (SRE toil on an async pipeline), design, labelled diagram, metrics table from Phase 4, demo GIF
-- 2-minute Loom walkthrough linked at the top
-- One blog post or tech-talk: "Agentic SRE assistant with Claude + MCP"
-- Resume bullet: "Designed and shipped an agentic monitoring/remediation system (Claude Agent SDK, MCP, OTel, AWS/Terraform) with an eval harness that keeps regression under X%."
+- README pitching Argus as the framework (not a Saboten-specific tool): problem, pluggable design, labelled diagram, Saboten reference plugin case study with metrics from Phase 4, demo GIF
+- `docs/writing-a-plugin.md` walkthrough with a second, non-Saboten plugin
+- 2-minute Loom walkthrough linked at the top of the README
+- One blog post or tech-talk: "Argus: an agentic SRE assistant you can point at anything"
+- Publish `argus-agent` to PyPI (optional but a strong signal)
+- Resume bullet: "Designed and shipped Argus, a pluggable agentic monitoring/investigation/remediation framework (Claude Agent SDK, MCP, OTel, AWS/Terraform) with an eval harness that keeps regression under X%. First production deployment: Blackbaud's Saboten pipeline."
 
 ## On the Claude Developer certification
 

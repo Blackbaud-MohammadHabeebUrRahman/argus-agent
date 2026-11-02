@@ -5,7 +5,7 @@ import time
 
 import httpx
 
-from sentinel.models import CheckResult, CheckStatus
+from argus.models import CheckResult, CheckStatus
 
 from .base import HealthCheck
 

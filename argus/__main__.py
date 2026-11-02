@@ -7,23 +7,23 @@ import os
 import signal
 
 from .config import load_config
-from .core.engine import SentinelEngine
+from .core.engine import ArgusEngine
 from .logging import configure_logging
 from .telemetry import configure_tracing
 
-logger = logging.getLogger("sentinel")
+logger = logging.getLogger("argus")
 
 
 async def _run() -> None:
     config = load_config()
     configure_logging(
         level=config.settings.log_level,
-        json_output=os.getenv("SENTINEL_LOG_JSON", "1") != "0",
+        json_output=os.getenv("ARGUS_LOG_JSON", "1") != "0",
     )
     configure_tracing()
-    logger.info("Saboten Sentinel starting", extra={"env": config.settings.environment})
+    logger.info("Saboten Argus starting", extra={"env": config.settings.environment})
 
-    engine = SentinelEngine(config)
+    engine = ArgusEngine(config)
     loop = asyncio.get_running_loop()
 
     stop_event = asyncio.Event()
@@ -39,10 +39,10 @@ async def _run() -> None:
             signal.signal(sig, lambda *_: _handle_signal())
 
     await engine.start()
-    logger.info("Sentinel is running. Press Ctrl+C to stop.")
+    logger.info("Argus is running. Press Ctrl+C to stop.")
     await stop_event.wait()
     await engine.stop()
-    logger.info("Sentinel stopped.")
+    logger.info("Argus stopped.")
 
 
 def main() -> None:

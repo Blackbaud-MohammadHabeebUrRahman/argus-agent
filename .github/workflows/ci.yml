@@ -28,17 +28,17 @@ jobs:
           pip install -e ".[dev,ai,mcp,otel]"
 
       - name: Ruff lint
-        run: ruff check sentinel tests
+        run: ruff check argus tests
 
       - name: Ruff format check
-        run: ruff format --check sentinel tests
+        run: ruff format --check argus tests
 
       - name: Mypy
-        run: mypy sentinel
+        run: mypy argus
         continue-on-error: true  # relax to warning until Phase 2 is typed
 
       - name: Pytest
-        run: pytest -m "not integration and not eval" --cov=sentinel --cov-report=xml
+        run: pytest -m "not integration and not eval" --cov=argus --cov-report=xml
 
       - name: Upload coverage
         if: matrix.python-version == '3.12'

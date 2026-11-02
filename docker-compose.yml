@@ -1,12 +1,12 @@
 services:
-  sentinel:
+  argus:
     build: .
     environment:
-      - SENTINEL_ENVIRONMENT=dev
-      - SENTINEL_REDIS_URL=redis://redis:6379/1
-      - SENTINEL_LOG_LEVEL=DEBUG
-      - SENTINEL_TEAMS_WEBHOOK_URL=${SENTINEL_TEAMS_WEBHOOK_URL:-}
-      - SENTINEL_SLACK_WEBHOOK_URL=${SENTINEL_SLACK_WEBHOOK_URL:-}
+      - ARGUS_ENVIRONMENT=dev
+      - ARGUS_REDIS_URL=redis://redis:6379/1
+      - ARGUS_LOG_LEVEL=DEBUG
+      - ARGUS_TEAMS_WEBHOOK_URL=${ARGUS_TEAMS_WEBHOOK_URL:-}
+      - ARGUS_SLACK_WEBHOOK_URL=${ARGUS_SLACK_WEBHOOK_URL:-}
     depends_on:
       redis:
         condition: service_healthy

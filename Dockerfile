@@ -5,10 +5,10 @@ WORKDIR /app
 COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 
-COPY sentinel/ sentinel/
+COPY argus/ argus/
 COPY config/ config/
 
-RUN useradd -ms /bin/bash sentinel
-USER sentinel
+RUN useradd -ms /bin/bash argus
+USER argus
 
-CMD ["python", "-m", "sentinel"]
+CMD ["python", "-m", "argus"]

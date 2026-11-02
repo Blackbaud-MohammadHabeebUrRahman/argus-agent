@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import logging
 
-from sentinel.alert.dedup import AlertDedup
-from sentinel.alert.router import AlertRouter
-from sentinel.config import SentinelConfig
-from sentinel.models import CheckResult, CheckStatus
-from sentinel.monitor.http_check import HttpCheck
-from sentinel.monitor.job_check import JobCheck
-from sentinel.monitor.redis_check import RedisCheck
+from argus.alert.dedup import AlertDedup
+from argus.alert.router import AlertRouter
+from argus.config import ArgusConfig
+from argus.models import CheckResult, CheckStatus
+from argus.monitor.http_check import HttpCheck
+from argus.monitor.job_check import JobCheck
+from argus.monitor.redis_check import RedisCheck
 
 from .scheduler import CheckScheduler
 from .state import IncidentStore
@@ -51,10 +51,10 @@ CHECK_FACTORIES = {
 }
 
 
-class SentinelEngine:
+class ArgusEngine:
     """Central orchestrator: detect -> evaluate state -> route alert."""
 
-    def __init__(self, config: SentinelConfig):
+    def __init__(self, config: ArgusConfig):
         self._config = config
         self._incident_store = IncidentStore(config.settings.redis_url)
         self._dedup = AlertDedup(
@@ -129,11 +129,11 @@ class SentinelEngine:
             )
 
     async def start(self) -> None:
-        logger.info("SentinelEngine starting...")
+        logger.info("ArgusEngine starting...")
         await self._scheduler.start()
 
     async def stop(self) -> None:
-        logger.info("SentinelEngine stopping...")
+        logger.info("ArgusEngine stopping...")
         await self._scheduler.stop()
         await self._incident_store.close()
         await self._dedup.close()

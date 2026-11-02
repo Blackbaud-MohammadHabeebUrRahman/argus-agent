@@ -4,7 +4,7 @@ import logging
 
 import httpx
 
-from sentinel.models import Incident, Severity
+from argus.models import Incident, Severity
 
 from .base import AlertChannel
 
@@ -63,7 +63,7 @@ class TeamsChannel(AlertChannel):
                                 "items": [
                                     {
                                         "type": "TextBlock",
-                                        "text": f"{emoji} Saboten Sentinel Alert",
+                                        "text": f"{emoji} Argus Alert",
                                         "weight": "Bolder",
                                         "size": "Medium",
                                         "color": "Attention"
