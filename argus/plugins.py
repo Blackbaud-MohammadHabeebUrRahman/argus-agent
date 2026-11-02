@@ -77,7 +77,9 @@ class Hub:
 def _register_core_checks(hub: Hub) -> None:
     """Checks that ship with every install, independent of any plugin."""
     from argus.monitor.http_check import HttpCheck
+    from argus.monitor.prometheus_scrape import PrometheusScrapeCheck
     from argus.monitor.redis_check import RedisCheck
+    from argus.monitor.tcp_check import TcpCheck
 
     def http_factory(
         name: str,
@@ -116,8 +118,47 @@ def _register_core_checks(hub: Hub) -> None:
             thresholds=chk_cfg.thresholds,
         )
 
+    def tcp_factory(
+        name: str,
+        svc_name: str,
+        svc_cfg: ServiceConfig,
+        chk_cfg: CheckConfig,
+        env: str,
+    ) -> HealthCheck:
+        return TcpCheck(
+            name=name,
+            service=svc_name,
+            host=svc_cfg.host,
+            port=chk_cfg.port,
+            interval=chk_cfg.interval,
+            timeout=chk_cfg.timeout,
+            environment=env,
+            thresholds=chk_cfg.thresholds,
+        )
+
+    def prometheus_scrape_factory(
+        name: str,
+        svc_name: str,
+        svc_cfg: ServiceConfig,
+        chk_cfg: CheckConfig,
+        env: str,
+    ) -> HealthCheck:
+        return PrometheusScrapeCheck(
+            name=name,
+            service=svc_name,
+            host=svc_cfg.host,
+            port=chk_cfg.port,
+            path=chk_cfg.path or "/metrics",
+            interval=chk_cfg.interval,
+            timeout=chk_cfg.timeout,
+            environment=env,
+            thresholds=chk_cfg.thresholds,
+        )
+
     hub.register_check("http", http_factory)
     hub.register_check("redis", redis_factory)
+    hub.register_check("tcp", tcp_factory)
+    hub.register_check("prometheus_scrape", prometheus_scrape_factory)
 
 
 def build_hub(enabled_products: list[str] | None = None) -> Hub:

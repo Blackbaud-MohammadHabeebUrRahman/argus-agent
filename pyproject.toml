@@ -15,12 +15,14 @@ dependencies = [
 [project.optional-dependencies]
 ai = ["anthropic>=0.40.0"]
 mcp = ["mcp[cli]>=1.2.0"]
+metrics = ["prometheus-client>=0.20.0"]
 otel = [
     "opentelemetry-api>=1.27.0",
     "opentelemetry-sdk>=1.27.0",
     "opentelemetry-exporter-otlp>=1.27.0",
     "opentelemetry-instrumentation-httpx>=0.48b0",
 ]
+integration = ["testcontainers[redis]>=4.0.0"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23.0",

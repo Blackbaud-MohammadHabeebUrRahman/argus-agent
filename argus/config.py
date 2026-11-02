@@ -54,6 +54,12 @@ class DedupConfig(BaseModel):
     cooldown_minutes: int = 30
 
 
+class MetricsConfig(BaseModel):
+    enabled: bool = True
+    port: int = 9090
+    addr: str = "0.0.0.0"
+
+
 class AlertingConfig(BaseModel):
     teams: TeamsConfig = Field(default_factory=TeamsConfig)
     slack: SlackConfig = Field(default_factory=SlackConfig)
@@ -91,6 +97,7 @@ class ArgusConfig(BaseModel):
     settings: ArgusSettings
     environments: dict[str, EnvironmentConfig] = Field(default_factory=dict)
     alerting: AlertingConfig = Field(default_factory=AlertingConfig)
+    metrics: MetricsConfig = Field(default_factory=MetricsConfig)
     product: str | None = None
     products: list[str] | None = None
 
@@ -173,10 +180,13 @@ def load_config(config_path: str | None = None, env: str | None = None) -> Argus
 
     alerting = AlertingConfig(**alerting_data)
 
+    metrics = MetricsConfig(**yaml_data.get("metrics", {}))
+
     return ArgusConfig(
         settings=settings,
         environments=environments,
         alerting=alerting,
+        metrics=metrics,
         product=yaml_data.get("product"),
         products=yaml_data.get("products"),
     )

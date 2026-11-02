@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Awaitable, Callable
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from argus.metrics import CHECK_DURATION, CHECKS_TOTAL
 from argus.models import CheckResult
 from argus.monitor.base import HealthCheck
 
@@ -39,10 +41,18 @@ class CheckScheduler:
         )
 
     async def _run_check(self, check: HealthCheck) -> None:
+        start = time.monotonic()
         try:
             result = await check.execute()
+            CHECKS_TOTAL.labels(
+                service=check.service, check=check.name, status=result.status.value
+            ).inc()
+            CHECK_DURATION.labels(service=check.service, check=check.name).observe(
+                time.monotonic() - start
+            )
             await self._on_result(result)
         except Exception:
+            CHECKS_TOTAL.labels(service=check.service, check=check.name, status="error").inc()
             logger.exception("Failed to run check %s/%s", check.service, check.name)
 
     async def start(self) -> None:
@@ -54,11 +64,7 @@ class CheckScheduler:
 
         # Run all checks immediately on startup
         for check in self._checks:
-            try:
-                result = await check.execute()
-                await self._on_result(result)
-            except Exception:
-                logger.exception("Initial check failed: %s/%s", check.service, check.name)
+            await self._run_check(check)
 
     async def stop(self) -> None:
         self._scheduler.shutdown(wait=False)

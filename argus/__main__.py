@@ -9,6 +9,7 @@ import signal
 from .config import load_config
 from .core.engine import ArgusEngine
 from .logging import configure_logging
+from .metrics import start_metrics_server
 from .telemetry import configure_tracing
 
 logger = logging.getLogger("argus")
@@ -21,7 +22,9 @@ async def _run() -> None:
         json_output=os.getenv("ARGUS_LOG_JSON", "1") != "0",
     )
     configure_tracing()
-    logger.info("Saboten Argus starting", extra={"env": config.settings.environment})
+    if config.metrics.enabled:
+        start_metrics_server(config.metrics.port, addr=config.metrics.addr)
+    logger.info("Argus starting", extra={"env": config.settings.environment})
 
     engine = ArgusEngine(config)
     loop = asyncio.get_running_loop()

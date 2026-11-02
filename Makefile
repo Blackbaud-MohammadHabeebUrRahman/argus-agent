@@ -12,7 +12,7 @@ dev: $(VENV)/.installed  ## Create venv and install dev + optional deps
 $(VENV)/.installed:
 	$(PYTHON) -m venv $(VENV)
 	$(PIP) install --upgrade pip
-	$(PIP) install -e ".[dev,ai,mcp,otel]"
+	$(PIP) install -e ".[dev,ai,mcp,otel,metrics,integration]"
 	touch $@
 
 test: dev  ## Run unit tests

@@ -39,8 +39,8 @@ class AlertRouter:
                 return [self._channels[ch] for ch in rule.channels if ch in self._channels]
         return list(self._channels.values())
 
-    async def dispatch(self, incident: Incident) -> int:
-        """Dispatch an incident to the appropriate channels. Returns count of successful sends."""
+    async def dispatch(self, incident: Incident) -> list[str]:
+        """Dispatch an incident. Returns the names of channels that fired."""
         channels = self._channels_for_severity(incident.severity.value)
 
         if not channels:
@@ -50,14 +50,13 @@ class AlertRouter:
                 incident.service,
                 incident.check_name,
             )
-            return 0
+            return []
 
-        sent = 0
+        fired: list[str] = []
         for channel in channels:
             try:
-                success = await channel.send(incident)
-                if success:
-                    sent += 1
+                if await channel.send(incident):
+                    fired.append(channel.name)
             except Exception:
                 logger.exception(
                     "Error dispatching to %s for %s/%s",
@@ -65,4 +64,4 @@ class AlertRouter:
                     incident.service,
                     incident.check_name,
                 )
-        return sent
+        return fired

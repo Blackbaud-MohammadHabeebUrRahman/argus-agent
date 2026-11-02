@@ -5,6 +5,7 @@ import logging
 from argus.alert.dedup import AlertDedup
 from argus.alert.router import AlertRouter
 from argus.config import ArgusConfig
+from argus.metrics import ALERTS_SENT, INCIDENTS_OPENED, INCIDENTS_RESOLVED
 from argus.models import CheckResult, CheckStatus
 from argus.plugins import Hub, build_hub
 
@@ -78,23 +79,30 @@ class ArgusEngine:
             if active:
                 await self._incident_store.resolve(dedup_key)
                 await self._dedup.clear(dedup_key)
+                INCIDENTS_RESOLVED.labels(service=result.service).inc()
                 logger.info("Resolved incident for %s/%s", result.service, result.check_name)
             return
 
         incident, is_new = await self._incident_store.create_or_update(result)
+        if is_new:
+            INCIDENTS_OPENED.labels(
+                service=incident.service, severity=incident.severity.value
+            ).inc()
 
-        if not await self._dedup.should_alert(incident.dedup_key):
+        if not await self._dedup.should_alert(incident.dedup_key, incident.severity):
             logger.debug("Dedup cooldown active for %s — suppressing alert", incident.dedup_key)
             return
 
-        sent = await self._router.dispatch(incident)
-        if sent > 0:
-            await self._dedup.mark_alerted(incident.dedup_key)
+        channels_fired = await self._router.dispatch(incident)
+        if channels_fired:
+            await self._dedup.mark_alerted(incident.dedup_key, incident.severity)
+            for channel_name in channels_fired:
+                ALERTS_SENT.labels(channel=channel_name).inc()
             logger.info(
                 "Alert dispatched for %s/%s to %d channel(s) [%s]",
                 incident.service,
                 incident.check_name,
-                sent,
+                len(channels_fired),
                 "NEW" if is_new else "UPDATE",
             )
 

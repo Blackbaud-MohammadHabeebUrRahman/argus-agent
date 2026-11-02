@@ -10,7 +10,8 @@
 environments:
   dev:
     services: {}
-      # Example of a core check that needs no plugin:
+      # Core check types that need no plugin:
+      #
       # example-api:
       #   host: "localhost"
       #   checks:
@@ -18,6 +19,18 @@ environments:
       #       path: "/health"
       #       port: 8080
       #       interval: 60
+      #     - type: tcp
+      #       port: 5432               # plain port-open check
+      #       interval: 30
+      #     - type: prometheus_scrape
+      #       port: 9090
+      #       path: "/metrics"
+      #       interval: 60
+      #       thresholds:
+      #         metric: "http_request_errors_total"
+      #         labels: {code: "500"}  # optional series matcher
+      #         warning: 10
+      #         critical: 50
 
 alerting:
   teams:
@@ -36,3 +49,10 @@ alerting:
 
   dedup:
     cooldown_minutes: 30
+
+# Prometheus /metrics endpoint. The server runs in a background thread
+# and is a no-op if the `metrics` extra isn't installed.
+metrics:
+  enabled: true
+  port: 9090
+  addr: "0.0.0.0"
