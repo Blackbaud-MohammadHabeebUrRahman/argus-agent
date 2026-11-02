@@ -1,0 +1,97 @@
+name: stuck-jobs-recent-deploy
+description: >
+  A saboten-ikari deploy went out 20 minutes before the incident fired.
+  Vendor APIs are healthy. The agent should correlate the deploy with
+  the incident and recommend a rollback or deploy inspection.
+
+products: [saboten]
+
+incident:
+  id: eval-stuck-jobs-deploy
+  check_name: saboten-api-saboten.job_health
+  service: saboten-api
+  severity: critical
+  message: "DHC: 22 failed jobs in 24h (critical threshold: 15)"
+  details:
+    DHC_failed_24h: 22
+    DHC_in_progress: 5
+    NCOA_failed_24h: 1
+  environment: prd
+  created_at: "2026-11-02T15:10:00+00:00"
+  updated_at: "2026-11-02T15:10:00+00:00"
+  alert_count: 1
+
+mock_tools:
+  get_recent_deploys:
+    - args_match: {service: saboten-ikari-3}
+      response:
+        configured: true
+        service: saboten-ikari-3
+        deploys:
+          - id: deploy-7742
+            deployed_at: "2026-11-02T14:50:00Z"
+            git_sha: "a7b912f"
+            author: "pat@example.com"
+            environment: prd
+    - args_match: {service: saboten-api}
+      response:
+        configured: true
+        service: saboten-api
+        deploys: []
+
+  check_saboten_vendor_api_health:
+    - args_match: {vendor: DHC}
+      response:
+        configured: true
+        vendor: DHC
+        api: "DHC Scorecard"
+        status: "200 OK"
+        error_rate_1h: 0.01
+
+  query_splunk:
+    - response:
+        configured: true
+        result_count: 2
+        results:
+          - _time: "2026-11-02T15:01:03Z"
+            level: ERROR
+            msg: "DHC job failed: TypeError in enrichment_handler.py line 142"
+          - _time: "2026-11-02T15:05:48Z"
+            level: ERROR
+            msg: "DHC job failed: TypeError in enrichment_handler.py line 142"
+
+  search_github_prs:
+    - args_match: {repo: "blackbaud/saboten-ikari-3"}
+      response:
+        configured: true
+        total_count: 1
+        returned: 1
+        prs:
+          - number: 847
+            title: "Refactor DHC enrichment handler"
+            merged_at: "2026-11-02T14:48:00Z"
+            user: "pat"
+            html_url: "https://github.com/blackbaud/saboten-ikari-3/pull/847"
+    - response:
+        configured: true
+        total_count: 0
+        returned: 0
+        prs: []
+
+expected:
+  must_mention_in_root_cause: [deploy]
+  must_mention_in_actions: [rollback]
+  must_call_tools: [get_recent_deploys]
+  judge_criteria: |
+    The agent should identify the saboten-ikari-3 deploy from ~20 minutes
+    before the incident as the primary suspect, and note that it correlates
+    with the TypeError in enrichment_handler.py seen in the logs. It should
+    recommend rolling back (or at minimum reviewing PR #847) as the first
+    action. A high-confidence verdict is appropriate because deploy+log
+    correlation is strong evidence. A report that blames the vendor or
+    recommends vendor action is wrong.
+
+budgets:
+  max_tool_calls: 10
+  max_cost_usd: 0.30
+  max_duration_s: 90

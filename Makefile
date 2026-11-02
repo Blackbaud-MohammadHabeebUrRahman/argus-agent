@@ -36,6 +36,12 @@ check: lint typecheck test  ## What CI runs
 run-local: dev  ## Run the argus locally against config/argus.yaml
 	$(PY) -m argus
 
+evals: dev  ## Run the eval sweep (spends real tokens). ANTHROPIC_API_KEY required.
+	$(PY) -m evals --models claude-opus-5-5,claude-sonnet-5-5,claude-haiku-5-5
+
+evals-quick: dev  ## Cheap single-model sweep against Haiku; good for iteration.
+	$(PY) -m evals --models claude-haiku-5-5
+
 docker-up:
 	docker compose up --build
 

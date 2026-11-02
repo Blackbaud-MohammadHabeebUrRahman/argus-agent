@@ -97,6 +97,10 @@ class Hub:
     def get_check_factory(self, type_name: str) -> CheckFactory | None:
         return self._checks.get(type_name)
 
+    def check_factories(self) -> dict[str, CheckFactory]:
+        """Snapshot of the check registry (name -> factory)."""
+        return dict(self._checks)
+
     def check_types(self) -> list[str]:
         return sorted(self._checks)
 

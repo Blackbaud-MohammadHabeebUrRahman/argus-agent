@@ -1,0 +1,65 @@
+name: redis-memory-saturation
+description: >
+  Redis queue depth is high and memory usage is near the configured cap.
+  No deploys, no vendor issues. The agent should recommend scaling the
+  Redis cluster or draining the backlog — not point at application code.
+
+products: []
+
+incident:
+  id: eval-redis-memory
+  check_name: redis-redis
+  service: redis
+  severity: critical
+  message: "Celery queue depth 712 >= 500; memory_pct 92% near max"
+  details:
+    queue_depth: 712
+    memory_pct: 92
+    used_memory_mb: 7340
+    max_memory_mb: 8000
+  environment: prd
+  created_at: "2026-11-02T20:15:00+00:00"
+  updated_at: "2026-11-02T20:15:00+00:00"
+  alert_count: 1
+
+mock_tools:
+  get_recent_deploys:
+    - response:
+        configured: true
+        service: redis
+        deploys: []
+
+  query_splunk:
+    - response:
+        configured: true
+        result_count: 2
+        results:
+          - _time: "2026-11-02T20:12:11Z"
+            level: WARN
+            msg: "worker saboten-ikari-3 slow consume: 142 msg/s (target 400)"
+          - _time: "2026-11-02T20:14:03Z"
+            level: WARN
+            msg: "worker saboten-tomi-3 slow consume: 98 msg/s (target 400)"
+
+  search_github_prs:
+    - response:
+        configured: true
+        total_count: 0
+        returned: 0
+        prs: []
+
+expected:
+  must_mention_in_root_cause: [memory]
+  must_mention_in_actions: [scale, drain]
+  judge_criteria: |
+    The agent should identify Redis memory saturation + queue backlog as the
+    core problem. Worker consume rates are below target, which is why the
+    queue is growing. Recommended actions should include scaling the Redis
+    instance (more memory) and/or scaling up workers to drain the backlog
+    faster. Mentioning the slow-consume log evidence is a good sign. A
+    report that blames a deploy (there are none) or a vendor API is wrong.
+
+budgets:
+  max_tool_calls: 8
+  max_cost_usd: 0.30
+  max_duration_s: 90

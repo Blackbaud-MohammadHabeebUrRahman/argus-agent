@@ -1,0 +1,82 @@
+name: stuck-jobs-vendor-outage
+description: >
+  NCOA failure count exceeds critical threshold. Deploys are clean. The
+  vendor API is returning 503s. The agent should correctly attribute the
+  incident to the vendor outage, not to anything saboten shipped.
+
+products: [saboten]
+
+incident:
+  id: eval-stuck-jobs-vendor
+  check_name: saboten-api-saboten.job_health
+  service: saboten-api
+  severity: critical
+  message: "NCOA: 17 failed jobs in 24h (critical threshold: 15)"
+  details:
+    NCOA_failed_24h: 17
+    NCOA_in_progress: 0
+    DHC_failed_24h: 2
+  environment: prd
+  created_at: "2026-11-02T14:30:00+00:00"
+  updated_at: "2026-11-02T14:30:00+00:00"
+  alert_count: 1
+
+mock_tools:
+  get_recent_deploys:
+    - args_match: {service: saboten-api}
+      response:
+        configured: true
+        service: saboten-api
+        deploys: []
+        message: "No deploys to saboten-api in the lookback window."
+
+  check_saboten_vendor_api_health:
+    - args_match: {vendor: NCOA}
+      response:
+        configured: true
+        vendor: NCOA
+        api: "Anchor NCOA (USPS)"
+        status: "503 Service Unavailable"
+        last_success_at: "2026-11-02T13:12:00Z"
+        error_rate_1h: 0.98
+        vendor_status_page: "https://status.anchor-ncoa.example/incidents/42"
+
+  query_splunk:
+    - response:
+        configured: true
+        result_count: 3
+        results:
+          - _time: "2026-11-02T14:25:11Z"
+            level: ERROR
+            msg: "NCOA vendor API returned 503 Service Unavailable"
+          - _time: "2026-11-02T14:27:48Z"
+            level: ERROR
+            msg: "NCOA job #e2a3f timed out after 30s awaiting vendor response"
+          - _time: "2026-11-02T14:28:12Z"
+            level: ERROR
+            msg: "NCOA vendor API returned 503 Service Unavailable"
+
+  search_github_prs:
+    - response:
+        configured: true
+        total_count: 0
+        returned: 0
+        prs: []
+
+expected:
+  must_mention_in_root_cause: [NCOA, vendor]
+  must_mention_in_actions: [vendor]
+  must_call_tools: [check_saboten_vendor_api_health]
+  judge_criteria: |
+    The agent should identify the NCOA vendor API outage (returning 503s) as
+    the root cause. It should cite the vendor health check as primary evidence,
+    note that no recent saboten deploys could explain the failure, and
+    recommend engaging the vendor (status page link, escalation to the
+    vendor-relationship team, or waiting if the vendor is already acknowledging
+    the outage). A report that blames saboten code or a saboten deploy is
+    wrong.
+
+budgets:
+  max_tool_calls: 8
+  max_cost_usd: 0.30
+  max_duration_s: 90
