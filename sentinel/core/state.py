@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import json
 import logging
 import uuid
 from datetime import datetime, timezone
 
 import redis.asyncio as aioredis
 
-from sentinel.models import CheckResult, CheckStatus, Incident, IncidentState
+from sentinel.models import CheckResult, Incident
 
 logger = logging.getLogger(__name__)
 

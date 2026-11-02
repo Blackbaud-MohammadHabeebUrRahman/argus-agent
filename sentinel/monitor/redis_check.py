@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import time
 import logging
+import time
 from typing import Any
 
 from sentinel.models import CheckStatus
-from .base import HealthCheck, CheckResult
+
+from .base import CheckResult, HealthCheck
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,8 @@ class RedisCheck(HealthCheck):
 
                 db_info = await client.info("keyspace")
                 total_keys = sum(
-                    v.get("keys", 0) for k, v in db_info.items()
+                    v.get("keys", 0)
+                    for k, v in db_info.items()
                     if k.startswith("db") and isinstance(v, dict)
                 )
 
@@ -63,7 +65,9 @@ class RedisCheck(HealthCheck):
 
                 details: dict[str, Any] = {
                     "used_memory_mb": round(used_memory / 1024 / 1024, 2),
-                    "max_memory_mb": round(max_memory / 1024 / 1024, 2) if max_memory else "unlimited",
+                    "max_memory_mb": round(max_memory / 1024 / 1024, 2)
+                    if max_memory
+                    else "unlimited",
                     "memory_pct": round(memory_pct, 1),
                     "total_keys": total_keys,
                     "celery_queue_depth": queue_depth,
@@ -74,7 +78,9 @@ class RedisCheck(HealthCheck):
 
                 if queue_depth >= self.queue_depth_critical:
                     status = CheckStatus.CRITICAL
-                    issues.append(f"Celery queue depth {queue_depth} >= {self.queue_depth_critical}")
+                    issues.append(
+                        f"Celery queue depth {queue_depth} >= {self.queue_depth_critical}"
+                    )
                 elif queue_depth >= self.queue_depth_warning:
                     status = CheckStatus.WARNING
                     issues.append(f"Celery queue depth {queue_depth} >= {self.queue_depth_warning}")

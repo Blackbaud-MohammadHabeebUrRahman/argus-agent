@@ -36,5 +36,6 @@ def test_text_mode_falls_back_to_plain_format(capsys):
     assert "plain-mode" in out
     # Not JSON — should fail to parse
     import pytest
+
     with pytest.raises(json.JSONDecodeError):
         json.loads(out.strip().splitlines()[-1])

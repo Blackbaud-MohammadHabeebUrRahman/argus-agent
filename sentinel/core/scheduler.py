@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Awaitable
+from collections.abc import Awaitable, Callable
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from sentinel.monitor.base import HealthCheck
 from sentinel.models import CheckResult
+from sentinel.monitor.base import HealthCheck
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,9 @@ class CheckScheduler:
         )
         logger.info(
             "Registered check %s/%s (every %ds)",
-            check.service, check.name, check.interval,
+            check.service,
+            check.name,
+            check.interval,
         )
 
     async def _run_check(self, check: HealthCheck) -> None:
@@ -56,9 +58,7 @@ class CheckScheduler:
                 result = await check.execute()
                 await self._on_result(result)
             except Exception:
-                logger.exception(
-                    "Initial check failed: %s/%s", check.service, check.name
-                )
+                logger.exception("Initial check failed: %s/%s", check.service, check.name)
 
     async def stop(self) -> None:
         self._scheduler.shutdown(wait=False)

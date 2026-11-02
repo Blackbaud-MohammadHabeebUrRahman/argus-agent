@@ -19,7 +19,8 @@ from sentinel.config import SentinelConfig, SentinelSettings, load_config
 def sentinel_yaml(tmp_path: Path) -> Path:
     """A minimal valid sentinel.yaml with one HTTP check."""
     path = tmp_path / "sentinel.yaml"
-    path.write_text(dedent("""
+    path.write_text(
+        dedent("""
         environments:
           dev:
             services:
@@ -42,7 +43,8 @@ def sentinel_yaml(tmp_path: Path) -> Path:
               channels: [teams]
           dedup:
             cooldown_minutes: 1
-    """).strip())
+    """).strip()
+    )
     return path
 
 

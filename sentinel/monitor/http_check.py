@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import time
 import logging
+import time
 
 import httpx
 
 from sentinel.models import CheckResult, CheckStatus
+
 from .base import HealthCheck
 
 logger = logging.getLogger(__name__)

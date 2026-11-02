@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import logging
 
-from sentinel.config import SentinelConfig, CheckConfig, ServiceConfig
-from sentinel.models import CheckResult, CheckStatus
-from .scheduler import CheckScheduler
-from .state import IncidentStore
 from sentinel.alert.dedup import AlertDedup
 from sentinel.alert.router import AlertRouter
-from sentinel.monitor.base import HealthCheck
+from sentinel.config import SentinelConfig
+from sentinel.models import CheckResult, CheckStatus
 from sentinel.monitor.http_check import HttpCheck
 from sentinel.monitor.job_check import JobCheck
 from sentinel.monitor.redis_check import RedisCheck
+
+from .scheduler import CheckScheduler
+from .state import IncidentStore
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class SentinelEngine:
         env_name = self._config.settings.environment
 
         for svc_name, svc_cfg in env_config.services.items():
-            for i, chk_cfg in enumerate(svc_cfg.checks):
+            for chk_cfg in svc_cfg.checks:
                 check_name = f"{svc_name}-{chk_cfg.type}"
                 if len(svc_cfg.checks) > 1:
                     # Disambiguate when a service has multiple checks of the same type
@@ -84,7 +84,8 @@ class SentinelEngine:
                 if factory is None:
                     logger.warning(
                         "Unknown check type '%s' for %s — skipping",
-                        chk_cfg.type, svc_name,
+                        chk_cfg.type,
+                        svc_name,
                     )
                     continue
 
@@ -94,7 +95,10 @@ class SentinelEngine:
     async def _on_check_result(self, result: CheckResult) -> None:
         logger.debug(
             "Check %s/%s: %s — %s",
-            result.service, result.check_name, result.status.value, result.message,
+            result.service,
+            result.check_name,
+            result.status.value,
+            result.message,
         )
 
         if result.status == CheckStatus.OK:
@@ -110,9 +114,7 @@ class SentinelEngine:
         incident, is_new = await self._incident_store.create_or_update(result)
 
         if not await self._dedup.should_alert(incident.dedup_key):
-            logger.debug(
-                "Dedup cooldown active for %s — suppressing alert", incident.dedup_key
-            )
+            logger.debug("Dedup cooldown active for %s — suppressing alert", incident.dedup_key)
             return
 
         sent = await self._router.dispatch(incident)

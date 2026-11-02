@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -95,9 +94,7 @@ class SentinelConfig(BaseModel):
 
     @property
     def active_env(self) -> EnvironmentConfig:
-        return self.environments.get(
-            self.settings.environment, EnvironmentConfig()
-        )
+        return self.environments.get(self.settings.environment, EnvironmentConfig())
 
 
 def _deep_merge(base: dict, overlay: dict) -> dict:
@@ -130,12 +127,15 @@ def load_config(config_path: str | None = None, env: str | None = None) -> Senti
     teams_cfg = alerting_data.get("teams", {})
     slack_cfg = alerting_data.get("slack", {})
 
+    # An explicit webhook via env var always enables the channel. The YAML
+    # default of enabled=false is for safety when no URL is configured; once
+    # an operator provides a URL they are opting in.
     if settings.teams_webhook_url:
         teams_cfg["webhook_url"] = settings.teams_webhook_url
-        teams_cfg.setdefault("enabled", True)
+        teams_cfg["enabled"] = True
     if settings.slack_webhook_url:
         slack_cfg["webhook_url"] = settings.slack_webhook_url
-        slack_cfg.setdefault("enabled", True)
+        slack_cfg["enabled"] = True
     if settings.smtp_host:
         email_cfg = alerting_data.get("email", {})
         email_cfg["smtp_host"] = settings.smtp_host

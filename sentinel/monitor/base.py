@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
-from sentinel.models import CheckResult, CheckStatus, Severity, SEVERITY_FROM_STATUS
+from sentinel.models import SEVERITY_FROM_STATUS, CheckResult, CheckStatus
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,7 @@ class HealthCheck(ABC):
         self.thresholds = thresholds or {}
 
     @abstractmethod
-    async def execute(self) -> CheckResult:
-        ...
+    async def execute(self) -> CheckResult: ...
 
     def _result(
         self,

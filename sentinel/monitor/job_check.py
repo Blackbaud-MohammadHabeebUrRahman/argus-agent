@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import time
 import logging
+import time
 from typing import Any
 
 import httpx
 
 from sentinel.models import CheckStatus
-from .base import HealthCheck, CheckResult
+
+from .base import CheckResult, HealthCheck
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,13 @@ class JobCheck(HealthCheck):
                         in_progress_url = f"{self.base_url}/{job_type}/in_progress/1"
                         resp = await client.get(in_progress_url)
                         if resp.status_code == 200:
-                            data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+                            data = (
+                                resp.json()
+                                if resp.headers.get("content-type", "").startswith(
+                                    "application/json"
+                                )
+                                else {}
+                            )
                             count = data.get("count", 0) if isinstance(data, dict) else 0
                             details[f"{job_type}_in_progress"] = count
                     except Exception:
@@ -57,17 +64,27 @@ class JobCheck(HealthCheck):
                         failed_url = f"{self.base_url}/{job_type}/failed/24"
                         resp = await client.get(failed_url)
                         if resp.status_code == 200:
-                            data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+                            data = (
+                                resp.json()
+                                if resp.headers.get("content-type", "").startswith(
+                                    "application/json"
+                                )
+                                else {}
+                            )
                             count = data.get("count", 0) if isinstance(data, dict) else 0
                             details[f"{job_type}_failed_24h"] = count
 
                             if count >= self.stuck_critical:
                                 worst_status = CheckStatus.CRITICAL
-                                issues.append(f"{job_type}: {count} failed jobs in 24h (critical threshold: {self.stuck_critical})")
+                                issues.append(
+                                    f"{job_type}: {count} failed jobs in 24h (critical threshold: {self.stuck_critical})"
+                                )
                             elif count >= self.stuck_warning:
                                 if worst_status != CheckStatus.CRITICAL:
                                     worst_status = CheckStatus.WARNING
-                                issues.append(f"{job_type}: {count} failed jobs in 24h (warning threshold: {self.stuck_warning})")
+                                issues.append(
+                                    f"{job_type}: {count} failed jobs in 24h (warning threshold: {self.stuck_warning})"
+                                )
                     except Exception:
                         details[f"{job_type}_failed_24h"] = "error"
 

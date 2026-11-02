@@ -4,7 +4,8 @@ import logging
 
 import httpx
 
-from sentinel.models import Incident, Severity, SEVERITY_COLORS
+from sentinel.models import Incident, Severity
+
 from .base import AlertChannel
 
 logger = logging.getLogger(__name__)
@@ -65,23 +66,27 @@ class SlackChannel(AlertChannel):
         ]
 
         if detail_lines:
-            blocks.append({
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "\n".join(detail_lines),
-                },
-            })
-
-        blocks.append({
-            "type": "context",
-            "elements": [
+            blocks.append(
                 {
-                    "type": "mrkdwn",
-                    "text": f"Detected at {incident.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')} | Incident {incident.id}",
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "\n".join(detail_lines),
+                    },
                 }
-            ],
-        })
+            )
+
+        blocks.append(
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f"Detected at {incident.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')} | Incident {incident.id}",
+                    }
+                ],
+            }
+        )
 
         payload = {"blocks": blocks}
 
@@ -94,7 +99,8 @@ class SlackChannel(AlertChannel):
                 else:
                     logger.error(
                         "Slack webhook returned %d: %s",
-                        resp.status_code, resp.text[:200],
+                        resp.status_code,
+                        resp.text[:200],
                     )
                     return False
         except Exception:

@@ -25,7 +25,7 @@ def test_load_config_env_overlay(sentinel_yaml: Path, monkeypatch: pytest.Monkey
         "  dev:\n"
         "    services:\n"
         "      extra-service:\n"
-        "        host: \"localhost\"\n"
+        '        host: "localhost"\n'
         "        checks: []\n"
     )
     monkeypatch.setenv("SENTINEL_ENVIRONMENT", "dev")
@@ -34,18 +34,14 @@ def test_load_config_env_overlay(sentinel_yaml: Path, monkeypatch: pytest.Monkey
     assert "dummy-api" in cfg.active_env.services
 
 
-def test_webhook_env_var_enables_channel(
-    sentinel_yaml: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_webhook_env_var_enables_channel(sentinel_yaml: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("SENTINEL_SLACK_WEBHOOK_URL", "https://hooks.example/XYZ")
     cfg = load_config(str(sentinel_yaml))
     assert cfg.alerting.slack.enabled is True
     assert cfg.alerting.slack.webhook_url == "https://hooks.example/XYZ"
 
 
-def test_missing_env_returns_empty_env_config(
-    sentinel_yaml: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_missing_env_returns_empty_env_config(sentinel_yaml: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("SENTINEL_ENVIRONMENT", "nope")
     cfg = load_config(str(sentinel_yaml))
     assert cfg.active_env.services == {}

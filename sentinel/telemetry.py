@@ -29,6 +29,7 @@ def configure_tracing(service_name: str = "saboten-sentinel") -> None:
         from opentelemetry.sdk.trace.export import (
             BatchSpanProcessor,
             ConsoleSpanExporter,
+            SimpleSpanProcessor,
         )
     except ImportError:
         logger.info("opentelemetry not installed; tracing disabled")
@@ -43,13 +44,16 @@ def configure_tracing(service_name: str = "saboten-sentinel") -> None:
             from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
                 OTLPSpanExporter,
             )
+
             provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
             logger.info("otel: exporting to %s", endpoint)
         except ImportError:
             logger.warning("otel OTLP exporter not available; falling back to console")
-            provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+            # Simple (synchronous) so spans flush before interpreter exit —
+            # Batch races stdout closure in short-lived processes (e.g. tests).
+            provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
     else:
-        provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+        provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
 
     trace.set_tracer_provider(provider)
     _initialized = True
@@ -59,10 +63,14 @@ def get_tracer(name: str) -> object:
     """Return a tracer; a no-op one if OTel isn't installed."""
     try:
         from opentelemetry import trace
+
         return trace.get_tracer(name)
     except ImportError:
+
         class _NoOpTracer:
             def start_as_current_span(self, *_args: object, **_kwargs: object) -> object:
                 from contextlib import nullcontext
+
                 return nullcontext()
+
         return _NoOpTracer()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import os
 import signal
@@ -20,9 +21,7 @@ async def _run() -> None:
         json_output=os.getenv("SENTINEL_LOG_JSON", "1") != "0",
     )
     configure_tracing()
-    logger.info(
-        "Saboten Sentinel starting", extra={"env": config.settings.environment}
-    )
+    logger.info("Saboten Sentinel starting", extra={"env": config.settings.environment})
 
     engine = SentinelEngine(config)
     loop = asyncio.get_running_loop()
@@ -47,10 +46,8 @@ async def _run() -> None:
 
 
 def main() -> None:
-    try:
+    with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(_run())
-    except KeyboardInterrupt:
-        pass
 
 
 if __name__ == "__main__":

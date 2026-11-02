@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from sentinel.config import AlertingConfig
 from sentinel.models import Incident
+
 from .base import AlertChannel
-from .teams import TeamsChannel
 from .slack import SlackChannel
+from .teams import TeamsChannel
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +36,7 @@ class AlertRouter:
     def _channels_for_severity(self, severity: str) -> list[AlertChannel]:
         for rule in self._rules:
             if rule.severity == severity:
-                return [
-                    self._channels[ch]
-                    for ch in rule.channels
-                    if ch in self._channels
-                ]
+                return [self._channels[ch] for ch in rule.channels if ch in self._channels]
         return list(self._channels.values())
 
     async def dispatch(self, incident: Incident) -> int:
@@ -50,7 +46,9 @@ class AlertRouter:
         if not channels:
             logger.info(
                 "No channels matched severity=%s for %s/%s — logging only",
-                incident.severity.value, incident.service, incident.check_name,
+                incident.severity.value,
+                incident.service,
+                incident.check_name,
             )
             return 0
 
@@ -63,6 +61,8 @@ class AlertRouter:
             except Exception:
                 logger.exception(
                     "Error dispatching to %s for %s/%s",
-                    channel.name, incident.service, incident.check_name,
+                    channel.name,
+                    incident.service,
+                    incident.check_name,
                 )
         return sent

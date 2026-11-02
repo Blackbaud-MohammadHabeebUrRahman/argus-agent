@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
-from datetime import timezone
 
 import httpx
 
-from sentinel.models import Incident, Severity, SEVERITY_COLORS
+from sentinel.models import Incident, Severity
+
 from .base import AlertChannel
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,6 @@ class TeamsChannel(AlertChannel):
             logger.warning("Teams webhook URL not configured — skipping")
             return False
 
-        color = SEVERITY_COLORS.get(incident.severity, "#808080")
         emoji = {
             Severity.INFO: "ℹ️",
             Severity.WARNING: "⚠️",
@@ -58,14 +57,20 @@ class TeamsChannel(AlertChannel):
                         "body": [
                             {
                                 "type": "Container",
-                                "style": "emphasis" if incident.severity in (Severity.CRITICAL, Severity.FATAL) else "default",
+                                "style": "emphasis"
+                                if incident.severity in (Severity.CRITICAL, Severity.FATAL)
+                                else "default",
                                 "items": [
                                     {
                                         "type": "TextBlock",
                                         "text": f"{emoji} Saboten Sentinel Alert",
                                         "weight": "Bolder",
                                         "size": "Medium",
-                                        "color": "Attention" if incident.severity in (Severity.CRITICAL, Severity.FATAL) else "Warning" if incident.severity == Severity.WARNING else "Default",
+                                        "color": "Attention"
+                                        if incident.severity in (Severity.CRITICAL, Severity.FATAL)
+                                        else "Warning"
+                                        if incident.severity == Severity.WARNING
+                                        else "Default",
                                     },
                                 ],
                             },
@@ -94,7 +99,8 @@ class TeamsChannel(AlertChannel):
                 else:
                     logger.error(
                         "Teams webhook returned %d: %s",
-                        resp.status_code, resp.text[:200],
+                        resp.status_code,
+                        resp.text[:200],
                     )
                     return False
         except Exception:
