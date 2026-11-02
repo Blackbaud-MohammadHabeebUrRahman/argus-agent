@@ -1,0 +1,25 @@
+services:
+  sentinel:
+    build: .
+    environment:
+      - SENTINEL_ENVIRONMENT=dev
+      - SENTINEL_REDIS_URL=redis://redis:6379/1
+      - SENTINEL_LOG_LEVEL=DEBUG
+      - SENTINEL_TEAMS_WEBHOOK_URL=${SENTINEL_TEAMS_WEBHOOK_URL:-}
+      - SENTINEL_SLACK_WEBHOOK_URL=${SENTINEL_SLACK_WEBHOOK_URL:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/config:ro
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
