@@ -232,14 +232,9 @@ class InvestigationAgent:
 
 
 def _build_client(api_key: str | None) -> Any:
-    try:
-        from anthropic import AsyncAnthropic
-    except ImportError as exc:
-        raise RuntimeError(
-            "The 'anthropic' package is required for investigations. "
-            "Install it with: pip install -e '.[ai]'"
-        ) from exc
-    return AsyncAnthropic(api_key=api_key) if api_key else AsyncAnthropic()
+    from argus.anthropic_client import build_async_client
+
+    return build_async_client(api_key=api_key)
 
 
 def _as_content_list(response: Any) -> list[Any]:

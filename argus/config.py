@@ -89,6 +89,7 @@ class ArgusSettings(BaseSettings):
     github_token: str = ""
     github_org: str = "blackbaud"
     anthropic_api_key: str = ""
+    anthropic_workspace_id: str = ""
 
     model_config = {"env_prefix": "ARGUS_"}
 

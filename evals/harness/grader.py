@@ -183,9 +183,9 @@ async def grade_with_judge(
     if not scenario.expected.judge_criteria:
         return JudgeResult(verdict="match", reasoning="(no judge criteria set)")
     if client is None:
-        from anthropic import AsyncAnthropic
+        from argus.anthropic_client import build_async_client
 
-        client = AsyncAnthropic()
+        client = build_async_client()
     prompt = _JUDGE_PROMPT.format(
         incident_summary=_incident_summary(scenario),
         judge_criteria=scenario.expected.judge_criteria,
